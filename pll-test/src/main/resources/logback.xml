@@ -1,0 +1,72 @@
+<configuration>
+
+<!--  定义配置属性，可以直接使用该属性的值，约定公共格式，使用方式${name}  -->
+    <property name="PATTERN" value="%d{yyyy-MM-dd HH:mm:ss} %M %L [%thread] %-5level %logger{36} - %msg%n" />
+    <!-- 日志文件输出目录 -->
+    <property name="LOG_DIR" value="./logs" />
+    <!-- 日志文件名前缀 -->
+    <property name="LOG_FILE_NAME" value="app" />
+
+    <!-- 控制台输出 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.err</target>
+        <encoder>
+            <pattern>${PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 文件输出 -->
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>${LOG_DIR}/${LOG_FILE_NAME}.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>${PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 按日期和文件大小滚动日志 -->
+    <appender name="ROLL_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 当前日志文件路径 -->
+        <file>${LOG_DIR}/${LOG_FILE_NAME}ROLL.log</file>
+        <!-- 滚动策略：按日期 + 文件大小 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 日志文件名格式：按天滚动，并支持文件大小触发 -->
+            <fileNamePattern>${LOG_DIR}/${LOG_FILE_NAME}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- 日志文件最大保留天数（可选） -->
+            <maxHistory>30</maxHistory>
+            <!-- 结合 SizeBasedTriggeringPolicy 进行文件大小分割 -->
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <!-- 单个日志文件最大 1MB -->
+                <maxFileSize>1MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <!-- 日志格式 -->
+        <encoder>
+            <pattern>${PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 仅记录 ERROR 级别的日志 -->
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+        <level>ERROR</level>
+        <onMatch>ACCEPT</onMatch>  <!-- 匹配 ERROR 则记录 -->
+        <onMismatch>DENY</onMismatch>  <!-- 不匹配 ERROR 则丢弃 -->
+    </filter>
+
+    <!-- 使用 AsyncAppender 包装 FILE_SYNC，使其异步写入 -->
+    <appender name="FILE_ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 不丢失日志的默认队列大小（默认256） -->
+        <queueSize>256</queueSize>
+        <!-- 如果队列满了80% 丢弃 ERROR 级别以下的日志（默认不丢弃） -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 引用同步的 FILE Appender -->
+        <appender-ref ref="ROLL_FILE" />
+    </appender>
+
+    <!-- 根日志记录器 -->
+    <root  level="ALL">
+        <appender-ref ref="CONSOLE" />
+<!--        <appender-ref ref="FILE" />-->
+        <appender-ref ref="ROLL_FILE" />
+    </root>
+</configuration>
